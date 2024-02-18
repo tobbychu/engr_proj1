@@ -19,7 +19,7 @@ class FacialRecognition:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Load pre-trained model.
-        model = InceptionResnetV1(pretrained='vggface2', device=device, classify= True, num_classes=2)
+        model = InceptionResnetV1(pretrained='vggface2', device=device, classify= True, num_classes=1)
 
         for param in model.parameters():
             param.requires_grad = False
@@ -31,7 +31,7 @@ class FacialRecognition:
         # model.fc = nn.Linear(num_features, 2, bias=True)
         model = model.to(device)
 
-        path = "models/trained_model.pt"
+        path = "models/trained_model_2.pt"
         model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
 
         model.eval()
@@ -49,9 +49,10 @@ class FacialRecognition:
         return model, transform
 
     def recognize_face(self, model, transform, frame, faces_bounding_box):
+        sigmoid_fun = torch.nn.Sigmoid()
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        labels = ['angelina', 'not_angelina']
+        labels = ['bill_gates', 'not_bill_gates']
         label_color = [(255, 255, 255), (255, 255, 255)]
         self.num_faces_recognized = 0
 
@@ -81,11 +82,12 @@ class FacialRecognition:
                 # Get prediction.
                 inputs = inputs.to(device)
                 outputs = model(inputs)
-                _, preds = torch.max(outputs, 1)
+                preds = sigmoid_fun(outputs[:,0]) > 0.5
+                preds = torch.tensor(preds, dtype=torch.uint8)
                 
                 result = labels[preds]
     
-                if result == "angelina":
+                if result == "bill_gates":
                     print(f"adding to num_facial_recognition: {self.num_faces_recognized}")
                     self.num_faces_recognized += 1
 
